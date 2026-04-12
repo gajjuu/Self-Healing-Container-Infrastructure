@@ -1,7 +1,5 @@
-version: "3.9"
-
 # ─────────────────────────────────────────────────────────────────────────────
-# Self-Healing Cloud Infrastructure — Docker Compose
+# Self-Healing Container Infrastructure — Docker Compose
 #
 # Services:
 #   sample-app   Monitored Flask application (labelled monitored=true)
@@ -19,7 +17,7 @@ services:
     ports:
       - "8080:8080"
     labels:
-      monitored: "true"          # tells the healer to watch this container
+      monitored: "true"
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
@@ -36,15 +34,16 @@ services:
     build:
       context: ./healer
     container_name: healer
+    user: root
     environment:
-      CHECK_INTERVAL:    "15"    # seconds between health polls
-      FAILURE_THRESHOLD: "3"     # consecutive failures before restart
-      REQUEST_TIMEOUT:   "5"     # per-request timeout
-      HEALTH_PATH:       "/health"
-      SLACK_WEBHOOK_URL: "${SLACK_WEBHOOK_URL:-}"   # optional — set in .env
+      CHECK_INTERVAL: "15"
+      FAILURE_THRESHOLD: "3"
+      REQUEST_TIMEOUT: "5"
+      HEALTH_PATH: "/health"
+      SLACK_WEBHOOK_URL: "${SLACK_WEBHOOK_URL:-}"
+      DOCKER_HOST: "unix:///var/run/docker.sock"
     volumes:
-      # Mount the Docker socket so the healer can restart containers
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - //var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - sample-app
     restart: unless-stopped
@@ -63,7 +62,7 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
-      - "--web.enable-lifecycle"          # allows config reload via POST /-/reload
+      - "--web.enable-lifecycle"
     restart: unless-stopped
     networks:
       - infra-net
