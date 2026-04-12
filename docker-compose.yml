@@ -1,0 +1,77 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Self-Healing Cloud Infrastructure — Docker Compose
+#
+# Services:
+#   sample-app   Monitored Flask application (labelled monitored=true)
+#   healer       Python health monitor — restarts unhealthy containers
+#   prometheus   Metrics collection (http://localhost:9090)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── The application being monitored ────────────────────────────────────────
+  sample-app:
+    build:
+      context: ./sample-app
+    container_name: sample-app
+    ports:
+      - "8080:8080"
+    labels:
+      monitored: "true"          # tells the healer to watch this container
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - infra-net
+
+  # ── The self-healing monitor ────────────────────────────────────────────────
+  healer:
+    build:
+      context: ./healer
+    container_name: healer
+    environment:
+      CHECK_INTERVAL:    "15"    # seconds between health polls
+      FAILURE_THRESHOLD: "3"     # consecutive failures before restart
+      REQUEST_TIMEOUT:   "5"     # per-request timeout
+      HEALTH_PATH:       "/health"
+      SLACK_WEBHOOK_URL: "${SLACK_WEBHOOK_URL:-}"   # optional — set in .env
+    volumes:
+      # Mount the Docker socket so the healer can restart containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - sample-app
+    restart: unless-stopped
+    networks:
+      - infra-net
+
+  # ── Prometheus metrics collection ───────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"          # allows config reload via POST /-/reload
+    restart: unless-stopped
+    networks:
+      - infra-net
+
+networks:
+  infra-net:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+    driver: local

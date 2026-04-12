@@ -1,0 +1,34 @@
+# prometheus.yml
+# --------------
+# Prometheus scrape configuration for the self-healing infrastructure demo.
+# Prometheus scrapes the sample-app's /metrics endpoint every 15 seconds.
+# The sample-app uses the prometheus_client library to expose default metrics
+# (process CPU, memory, GC, request counts) automatically.
+
+global:
+  scrape_interval:     15s   # how often Prometheus scrapes targets
+  evaluation_interval: 15s   # how often Prometheus evaluates alerting rules
+
+# Alertmanager config — optional, add your Alertmanager address here
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+scrape_configs:
+
+  # Prometheus scrapes itself for meta-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Scrape the sample app
+  - job_name: "sample-app"
+    static_configs:
+      - targets: ["sample-app:8080"]
+    metrics_path: "/metrics"
+
+  # Scrape the healer process (if you add a /metrics endpoint to it later)
+  # - job_name: "healer"
+  #   static_configs:
+  #     - targets: ["healer:9091"]

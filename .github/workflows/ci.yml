@@ -1,0 +1,65 @@
+# .github/workflows/ci.yml
+# -------------------------
+# Runs on every push and pull request to main.
+# Validates Python code quality and runs a smoke test of the health monitor.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  lint-and-test:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r healer/requirements.txt
+          pip install flake8 pytest
+
+      - name: Lint with flake8
+        run: |
+          # Fail on syntax errors and undefined names; warn on style issues
+          flake8 healer/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 healer/ --count --max-line-length=100 --statistics
+
+      - name: Run unit tests
+        run: pytest tests/ -v
+        if: hashFiles('tests/') != ''
+
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build healer image
+        run: docker build -t self-healing-healer ./healer
+
+      - name: Build sample-app image
+        run: docker build -t self-healing-sample-app ./sample-app
+
+      - name: Smoke test — compose up
+        run: |
+          docker compose up -d
+          sleep 20
+          # Verify sample-app health endpoint is reachable
+          curl --fail --retry 5 --retry-delay 3 http://localhost:8080/health
+          docker compose down
