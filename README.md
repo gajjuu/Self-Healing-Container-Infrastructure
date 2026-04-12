@@ -1,10 +1,10 @@
-# 🛡️ Self-Healing Cloud Infrastructure
+# 🛡️ Self-Healing Container Infrastructure
 
 A production-grade self-healing system that **automatically detects and recovers failing containers** — no manual intervention required.
 
 Built with Docker, Python, and Prometheus. Deploys locally in under 2 minutes.
 
-![CI](https://github.com/YOUR_USERNAME/self-healing-cloud-infra/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/gajjuu/Self-Healing-Container-Infrastructure/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
 ![License](https://img.shields.io/badge/License-MIT-green)
@@ -40,7 +40,7 @@ Built with Docker, Python, and Prometheus. Deploys locally in under 2 minutes.
 ## Project Structure
 
 ```
-self-healing-cloud-infra/
+Self-Healing-Container-Infrastructure/
 ├── healer/
 │   ├── health_monitor.py   # Core polling and restart logic
 │   ├── slack_alert.py      # Slack webhook notifications
@@ -72,8 +72,8 @@ self-healing-cloud-infra/
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/self-healing-cloud-infra.git
-cd self-healing-cloud-infra
+git clone https://github.com/gajjuu/Self-Healing-Container-Infrastructure.git
+cd Self-Healing-Container-Infrastructure
 
 # Optional: configure Slack alerts
 cp .env.example .env
